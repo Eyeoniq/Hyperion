@@ -1,0 +1,2089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hyperion Monitor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    #status {
+      display: flex;
+      align-items: center;
+    }
+    
+    #status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: red;
+      margin-right: 10px;
+    }
+    
+    #status-indicator.connected {
+      background-color: green;
+    }
+    
+    .camera-tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ccc;
+    }
+    
+    .camera-tab {
+      padding: 10px 20px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      border-radius: 5px 5px 0 0;
+      cursor: pointer;
+    }
+    
+    .camera-tab.active {
+      background-color: #fff;
+      border-bottom: 1px solid #fff;
+      margin-bottom: -1px;
+      font-weight: bold;
+    }
+    
+    .camera-tab-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 5px;
+      background-color: #ccc;
+    }
+    
+    .camera-tab-indicator.connected {
+      background-color: green;
+    }
+    
+    .camera-section {
+      display: none;
+      margin-bottom: 30px;
+    }
+    
+    .camera-section.active {
+      display: block;
+    }
+    
+    .camera-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .camera-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin: 0;
+    }
+    
+    .camera-status {
+      display: flex;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+    
+    .camera-status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #ccc;
+      margin-right: 5px;
+    }
+    
+    .camera-status-indicator.connected {
+      background-color: green;
+    }
+    
+    .terminal {
+      height: 200px;
+      background-color: #1e1e1e;
+      color: #f0f0f0;
+      padding: 10px;
+      overflow-y: auto;
+      font-family: monospace;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    
+    .command-line {
+      color: #64b5f6;
+    }
+    
+    .command-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    
+    button {
+      padding: 8px 16px;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background-color: #45a049;
+    }
+    
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    .info-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    
+    .info-box {
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      padding: 15px;
+    }
+    
+    .info-box h3 {
+      margin-top: 0;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+    
+    .object-count {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2196F3;
+      margin: 10px 0;
+      transition: all 0.3s ease;
+    }
+    
+    .object-count.updated {
+      color: #FF5722;
+      transform: scale(1.1);
+    }
+    
+    .detection-item {
+      margin-bottom: 5px;
+      padding: 5px;
+      background-color: #e0e0e0;
+      border-radius: 3px;
+    }
+    
+    .latest-detections {
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    
+    .stream-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .stream-buttons button {
+      flex: 1;
+    }
+    
+    .stream-container {
+      margin-top: 15px;
+      display: none;
+      width: 100%;
+      background-color: #000;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .stream-container.visible {
+      display: block;
+    }
+    
+    .stream-player {
+      width: 100%;
+      height: 300px;
+      border: none;
+    }
+    
+    .stream-info {
+      padding: 10px;
+      background-color: #333;
+      color: white;
+      font-size: 12px;
+    }
+    
+    .btn-blue {
+      background-color: #2196F3;
+    }
+    
+    .btn-blue:hover {
+      background-color: #0b7dda;
+    }
+    
+    .btn-red {
+      background-color: #f44336;
+    }
+    
+    .btn-red:hover {
+      background-color: #d32f2f;
+    }
+    
+    .btn-orange {
+      background-color: #FF9800;
+    }
+    
+    .btn-orange:hover {
+      background-color: #F57C00;
+    }
+    
+    .rtsp-url-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .rtsp-url-text {
+      flex: 1;
+      margin: 0;
+      word-break: break-all;
+    }
+    
+    .copy-url-btn {
+      margin-left: 10px;
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+    
+    .external-link {
+      display: inline-block;
+      margin-top: 5px;
+      color: #2196F3;
+      text-decoration: none;
+    }
+    
+    .external-link:hover {
+      text-decoration: underline;
+    }
+    
+    /* Camera-specific colors */
+    .camera1-color {
+      color: #2196F3;
+      border-color: #2196F3;
+    }
+    
+    .camera1-bg {
+      background-color: #2196F3;
+    }
+    
+    .camera2-color {
+      color: #4CAF50;
+      border-color: #4CAF50;
+    }
+    
+    .camera2-bg {
+      background-color: #4CAF50;
+    }
+    
+    .camera3-color {
+      color: #FF9800;
+      border-color: #FF9800;
+    }
+    
+    .camera3-bg {
+      background-color: #FF9800;
+    }
+
+    .camera-status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .camera-status-card {
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      padding: 15px;
+      border-left: 4px solid #ccc;
+    }
+
+    .camera1-border {
+      border-left: 4px solid #2196F3;
+    }
+
+    .camera2-border {
+      border-left: 4px solid #4CAF50;
+    }
+
+    .camera3-border {
+      border-left: 4px solid #FF9800;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .status-label {
+      font-weight: bold;
+      color: #666;
+    }
+
+    .streams-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stream-card {
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      padding: 15px;
+      border-left: 4px solid #ccc;
+    }
+
+    .stream-card h4 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .all-detections-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .detection-card {
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      padding: 15px;
+      border-left: 4px solid #ccc;
+      height: 250px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detection-card h4 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .detection-card .latest-detections {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .terminals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .terminal-card {
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      padding: 15px;
+      border-left: 4px solid #ccc;
+      height: 300px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .terminal-card h4 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .overview-terminal {
+      height: 220px;
+      flex: 1;
+      margin-bottom: 0;
+    }
+    
+    /* New styles for peak detection */
+    .peak-detection-box {
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 15px;
+      margin-top: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .peak-detection-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-top: 0;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .peak-count {
+      font-size: 32px;
+      font-weight: bold;
+      text-align: center;
+      margin: 15px 0;
+      transition: all 0.3s ease;
+    }
+    
+    .peak-count.updated {
+      transform: scale(1.1);
+    }
+    
+    .timer-bar-container {
+      width: 100%;
+      height: 6px;
+      background-color: #e9ecef;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    
+    .timer-bar {
+      height: 100%;
+      width: 100%;
+      background-color: #2196F3;
+      border-radius: 3px;
+      transition: width 1s linear;
+    }
+    
+    .camera1-peak {
+      color: #2196F3;
+    }
+    
+    .camera2-peak {
+      color: #4CAF50;
+    }
+    
+    .camera3-peak {
+      color: #FF9800;
+    }
+    
+    .timer-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #6c757d;
+      margin-top: 5px;
+    }
+    
+    .peak-info {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      font-size: 0.9rem;
+    }
+    
+    .peak-label {
+      color: #6c757d;
+    }
+    
+    .peak-value {
+      font-weight: bold;
+    }
+
+    /* New styles for peak history recording */
+    .recording-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn-start {
+      background-color: #4CAF50;
+    }
+
+    .btn-start:hover {
+      background-color: #45a049;
+    }
+
+    .btn-stop {
+      background-color: #f44336;
+    }
+
+    .btn-stop:hover {
+      background-color: #d32f2f;
+    }
+
+    .btn-clear {
+      background-color: #757575;
+    }
+
+    .btn-clear:hover {
+      background-color: #616161;
+    }
+
+    .recording-status {
+      display: flex;
+      align-items: center;
+      margin-left: 10px;
+      font-size: 0.9rem;
+    }
+
+    .recording-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #ccc;
+      margin-right: 5px;
+    }
+
+    .recording-indicator.active {
+      background-color: #f44336;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+
+    .peak-history-box {
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 15px;
+      margin-top: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .peak-history-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-top: 0;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .peak-history-list {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 10px;
+      background-color: #fff;
+    }
+
+    .peak-history-item {
+      padding: 8px;
+      border-bottom: 1px solid #e9ecef;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .peak-history-item:last-child {
+      border-bottom: none;
+    }
+
+    .peak-history-count {
+      font-weight: bold;
+    }
+
+    .peak-history-time {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+
+    .no-history {
+      color: #6c757d;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .overview-history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .history-card {
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      padding: 15px;
+      border-left: 4px solid #ccc;
+      height: 250px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .history-card h4 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-card .peak-history-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .global-recording-controls {
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 15px;
+      margin-top: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .global-recording-controls h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 1.2rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Hyperion Multi-Camera AMB82 Monitor</h1>
+    <div id="status">
+      <div id="status-indicator"></div>
+      <span id="status-text">Disconnected</span>
+    </div>
+  </div>
+  
+  <div class="camera-tabs">
+    <div class="camera-tab active" data-camera="overview">
+      <span class="camera-tab-indicator" id="overview-tab-indicator"></span>
+      Overview
+    </div>
+    <div class="camera-tab" data-camera="1">
+      <span class="camera-tab-indicator" id="camera1-indicator"></span>
+      Camera 1
+    </div>
+    <div class="camera-tab" data-camera="2">
+      <span class="camera-tab-indicator" id="camera2-indicator"></span>
+      Camera 2
+    </div>
+    <div class="camera-tab" data-camera="3">
+      <span class="camera-tab-indicator" id="camera3-indicator"></span>
+      Camera 3
+    </div>
+  </div>
+  
+  <!-- Camera 1 Section -->
+  <div class="camera-section" id="camera1-section">
+    <div class="camera-header">
+      <h2 class="camera-title camera1-color">Camera 1</h2>
+      <div class="camera-status">
+        <div class="camera-status-indicator" id="camera1-status-indicator"></div>
+        <span id="camera1-status-text">Waiting for connection...</span>
+      </div>
+    </div>
+    
+    <!-- New Peak Detection Box for Camera 1 -->
+    <div class="peak-detection-box">
+      <div class="peak-detection-title">
+        <span>Peak Vehicle Detection (1-minute interval)</span>
+        <span id="camera1-next-reset">Next reset: 60s</span>
+      </div>
+      <div class="peak-count camera1-peak" id="camera1-peak-count">0</div>
+      <div class="timer-bar-container">
+        <div class="timer-bar" id="camera1-timer-bar"></div>
+      </div>
+      <div class="timer-info">
+        <span>0s</span>
+        <span>60s</span>
+      </div>
+      <div class="peak-info">
+        <span class="peak-label">Last reset:</span>
+        <span class="peak-value" id="camera1-last-reset">Never</span>
+      </div>
+      <div class="peak-info">
+        <span class="peak-label">Current interval vehicles:</span>
+        <span class="peak-value" id="camera1-current-count">0</span>
+      </div>
+      
+      <!-- New Recording Controls for Camera 1 -->
+      <div class="recording-controls">
+        <button class="btn-start" id="camera1-start-recording">Start Recording</button>
+        <button class="btn-stop" id="camera1-stop-recording" disabled>Stop Recording</button>
+        <button class="btn-clear" id="camera1-clear-history">Clear History</button>
+        <div class="recording-status">
+          <div class="recording-indicator" id="camera1-recording-indicator"></div>
+          <span id="camera1-recording-status">Not recording</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- New Peak History Box for Camera 1 -->
+    <div class="peak-history-box">
+      <div class="peak-history-title">
+        <span>Peak Detection History</span>
+        <span id="camera1-history-count">0 records</span>
+      </div>
+      <div class="peak-history-list" id="camera1-peak-history">
+        <div class="no-history">No history recorded yet. Click "Start Recording" to begin.</div>
+      </div>
+    </div>
+    
+    <div class="terminal" id="camera1-terminal"></div>
+    
+    <form class="command-form" id="camera1-command-form">
+      <input type="text" id="camera1-command-input" placeholder="Enter command for Camera 1..." />
+      <button type="submit" id="camera1-send-button" disabled>Send</button>
+    </form>
+    
+    <div class="info-panel">
+      <div class="info-box">
+        <h3>Object Detection</h3>
+        <p>Total objects detected:</p>
+        <div class="object-count" id="camera1-object-count">0</div>
+        <p>Last updated: <span id="camera1-last-updated">Never</span></p>
+      </div>
+      
+      <div class="info-box">
+        <h3>RTSP Stream</h3>
+        <div class="rtsp-url-container">
+          <p class="rtsp-url-text" id="camera1-rtsp-url-text">Waiting for camera connection...</p>
+          <button id="camera1-copy-url-btn" class="copy-url-btn btn-blue" disabled>Copy</button>
+        </div>
+        <a id="camera1-external-player-link" class="external-link" href="#" target="_blank" style="display: none;">
+          Open in external player
+        </a>
+      </div>
+      
+      <div class="info-box">
+        <h3>Latest Detections</h3>
+        <div class="latest-detections" id="camera1-latest-detections">No detections yet</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Camera 2 Section -->
+  <div class="camera-section" id="camera2-section">
+    <div class="camera-header">
+      <h2 class="camera-title camera2-color">Camera 2</h2>
+      <div class="camera-status">
+        <div class="camera-status-indicator" id="camera2-status-indicator"></div>
+        <span id="camera2-status-text">Waiting for connection...</span>
+      </div>
+    </div>
+    
+    <!-- Peak Detection Box for Camera 2 -->
+    <div class="peak-detection-box">
+      <div class="peak-detection-title">
+        <span>Peak Vehicle Detection (1-minute interval)</span>
+        <span id="camera2-next-reset">Next reset: 60s</span>
+      </div>
+      <div class="peak-count camera2-peak" id="camera2-peak-count">0</div>
+      <div class="timer-bar-container">
+        <div class="timer-bar" id="camera2-timer-bar"></div>
+      </div>
+      <div class="timer-info">
+        <span>0s</span>
+        <span>60s</span>
+      </div>
+      <div class="peak-info">
+        <span class="peak-label">Last reset:</span>
+        <span class="peak-value" id="camera2-last-reset">Never</span>
+      </div>
+      <div class="peak-info">
+        <span class="peak-label">Current interval vehicles:</span>
+        <span class="peak-value" id="camera2-current-count">0</span>
+      </div>
+      
+      <!-- New Recording Controls for Camera 2 -->
+      <div class="recording-controls">
+        <button class="btn-start" id="camera2-start-recording">Start Recording</button>
+        <button class="btn-stop" id="camera2-stop-recording" disabled>Stop Recording</button>
+        <button class="btn-clear" id="camera2-clear-history">Clear History</button>
+        <div class="recording-status">
+          <div class="recording-indicator" id="camera2-recording-indicator"></div>
+          <span id="camera2-recording-status">Not recording</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- New Peak History Box for Camera 2 -->
+    <div class="peak-history-box">
+      <div class="peak-history-title">
+        <span>Peak Detection History</span>
+        <span id="camera2-history-count">0 records</span>
+      </div>
+      <div class="peak-history-list" id="camera2-peak-history">
+        <div class="no-history">No history recorded yet. Click "Start Recording" to begin.</div>
+      </div>
+    </div>
+    
+    <div class="terminal" id="camera2-terminal"></div>
+    
+    <form class="command-form" id="camera2-command-form">
+      <input type="text" id="camera2-command-input" placeholder="Enter command for Camera 2..." />
+      <button type="submit" id="camera2-send-button" disabled>Send</button>
+    </form>
+    
+    <div class="info-panel">
+      <div class="info-box">
+        <h3>Object Detection</h3>
+        <p>Total objects detected:</p>
+        <div class="object-count" id="camera2-object-count">0</div>
+        <p>Last updated: <span id="camera2-last-updated">Never</span></p>
+      </div>
+      
+      <div class="info-box">
+        <h3>RTSP Stream</h3>
+        <div class="rtsp-url-container">
+          <p class="rtsp-url-text" id="camera2-rtsp-url-text">Waiting for camera connection...</p>
+          <button id="camera2-copy-url-btn" class="copy-url-btn btn-blue" disabled>Copy</button>
+        </div>
+        <a id="camera2-external-player-link" class="external-link" href="#" target="_blank" style="display: none;">
+          Open in external player
+        </a>
+      </div>
+      
+      <div class="info-box">
+        <h3>Latest Detections</h3>
+        <div class="latest-detections" id="camera2-latest-detections">No detections yet</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Camera 3 Section -->
+  <div class="camera-section" id="camera3-section">
+    <div class="camera-header">
+      <h2 class="camera-title camera3-color">Camera 3</h2>
+      <div class="camera-status">
+        <div class="camera-status-indicator" id="camera3-status-indicator"></div>
+        <span id="camera3-status-text">Waiting for connection...</span>
+      </div>
+    </div>
+    
+    <!-- Peak Detection Box for Camera 3 -->
+    <div class="peak-detection-box">
+      <div class="peak-detection-title">
+        <span>Peak Vehicle Detection (1-minute interval)</span>
+        <span id="camera3-next-reset">Next reset: 60s</span>
+      </div>
+      <div class="peak-count camera3-peak" id="camera3-peak-count">0</div>
+      <div class="timer-bar-container">
+        <div class="timer-bar" id="camera3-timer-bar"></div>
+      </div>
+      <div class="timer-info">
+        <span>0s</span>
+        <span>60s</span>
+      </div>
+      <div class="peak-info">
+        <span class="peak-label">Last reset:</span>
+        <span class="peak-value" id="camera3-last-reset">Never</span>
+      </div>
+      <div class="peak-info">
+        <span class="peak-label">Current interval vehicles:</span>
+        <span class="peak-value" id="camera3-current-count">0</span>
+      </div>
+      
+      <!-- New Recording Controls for Camera 3 -->
+      <div class="recording-controls">
+        <button class="btn-start" id="camera3-start-recording">Start Recording</button>
+        <button class="btn-stop" id="camera3-stop-recording" disabled>Stop Recording</button>
+        <button class="btn-clear" id="camera3-clear-history">Clear History</button>
+        <div class="recording-status">
+          <div class="recording-indicator" id="camera3-recording-indicator"></div>
+          <span id="camera3-recording-status">Not recording</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- New Peak History Box for Camera 3 -->
+    <div class="peak-history-box">
+      <div class="peak-history-title">
+        <span>Peak Detection History</span>
+        <span id="camera3-history-count">0 records</span>
+      </div>
+      <div class="peak-history-list" id="camera3-peak-history">
+        <div class="no-history">No history recorded yet. Click "Start Recording" to begin.</div>
+      </div>
+    </div>
+    
+    <div class="terminal" id="camera3-terminal"></div>
+    
+    <form class="command-form" id="camera3-command-form">
+      <input type="text" id="camera3-command-input" placeholder="Enter command for Camera 3..." />
+      <button type="submit" id="camera3-send-button" disabled>Send</button>
+    </form>
+    
+    <div class="info-panel">
+      <div class="info-box">
+        <h3>Object Detection</h3>
+        <p>Total objects detected:</p>
+        <div class="object-count" id="camera3-object-count">0</div>
+        <p>Last updated: <span id="camera3-last-updated">Never</span></p>
+      </div>
+      
+      <div class="info-box">
+        <h3>RTSP Stream</h3>
+        <div class="rtsp-url-container">
+          <p class="rtsp-url-text" id="camera3-rtsp-url-text">Waiting for camera connection...</p>
+          <button id="camera3-copy-url-btn" class="copy-url-btn btn-blue" disabled>Copy</button>
+        </div>
+        <a id="camera3-external-player-link" class="external-link" href="#" target="_blank" style="display: none;">
+          Open in external player
+        </a>
+      </div>
+      
+      <div class="info-box">
+        <h3>Latest Detections</h3>
+        <div class="latest-detections" id="camera3-latest-detections">No detections yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overview Section -->
+  <div class="camera-section active" id="overview-section">
+    <div class="camera-header">
+      <h2 class="camera-title">All Cameras Overview</h2>
+    </div>
+
+    <!-- Add Global Recording Controls -->
+    <div class="global-recording-controls">
+      <h3>Global Peak Detection Recording</h3>
+      <div class="recording-controls">
+        <button class="btn-start" id="global-start-recording">Start Recording All Cameras</button>
+        <button class="btn-stop" id="global-stop-recording" disabled>Stop Recording All Cameras</button>
+        <button class="btn-clear" id="global-clear-history">Clear All History</button>
+        <div class="recording-status">
+          <div class="recording-indicator" id="global-recording-indicator"></div>
+          <span id="global-recording-status">Not recording</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- New Peak Detection Overview -->
+    <h3>Peak Vehicle Detections (1-minute intervals)</h3>
+    <div class="camera-status-grid">
+      <div class="camera-status-card camera1-border">
+        <h3 class="camera1-color">Camera 1 Peak</h3>
+        <div class="peak-count camera1-peak" id="overview-camera1-peak">0</div>
+        <div class="peak-info">
+          <span class="peak-label">Next reset:</span>
+          <span class="peak-value" id="overview-camera1-next-reset">60s</span>
+        </div>
+        <div class="timer-bar-container">
+          <div class="timer-bar" id="overview-camera1-timer-bar"></div>
+        </div>
+        <div class="recording-status">
+          <div class="recording-indicator" id="overview-camera1-recording-indicator"></div>
+          <span id="overview-camera1-recording-status">Not recording</span>
+        </div>
+      </div>
+      
+      <div class="camera-status-card camera2-border">
+        <h3 class="camera2-color">Camera 2 Peak</h3>
+        <div class="peak-count camera2-peak" id="overview-camera2-peak">0</div>
+        <div class="peak-info">
+          <span class="peak-label">Next reset:</span>
+          <span class="peak-value" id="overview-camera2-next-reset">60s</span>
+        </div>
+        <div class="timer-bar-container">
+          <div class="timer-bar" id="overview-camera2-timer-bar"></div>
+        </div>
+        <div class="recording-status">
+          <div class="recording-indicator" id="overview-camera2-recording-indicator"></div>
+          <span id="overview-camera2-recording-status">Not recording</span>
+        </div>
+      </div>
+      
+      <div class="camera-status-card camera3-border">
+        <h3 class="camera3-color">Camera 3 Peak</h3>
+        <div class="peak-count camera3-peak" id="overview-camera3-peak">0</div>
+        <div class="peak-info">
+          <span class="peak-label">Next reset:</span>
+          <span class="peak-value" id="overview-camera3-next-reset">60s</span>
+        </div>
+        <div class="timer-bar-container">
+          <div class="timer-bar" id="overview-camera3-timer-bar"></div>
+        </div>
+        <div class="recording-status">
+          <div class="recording-indicator" id="overview-camera3-recording-indicator"></div>
+          <span id="overview-camera3-recording-status">Not recording</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- New Peak History Overview -->
+    <h3>Peak Detection History</h3>
+    <div class="overview-history-grid">
+      <div class="history-card camera1-border">
+        <h4 class="camera1-color">
+          <span>Camera 1 History</span>
+          <span id="overview-camera1-history-count">0 records</span>
+        </h4>
+        <div class="peak-history-list" id="overview-camera1-peak-history">
+          <div class="no-history">No history recorded yet.</div>
+        </div>
+      </div>
+      
+      <div class="history-card camera2-border">
+        <h4 class="camera2-color">
+          <span>Camera 2 History</span>
+          <span id="overview-camera2-history-count">0 records</span>
+        </h4>
+        <div class="peak-history-list" id="overview-camera2-peak-history">
+          <div class="no-history">No history recorded yet.</div>
+        </div>
+      </div>
+      
+      <div class="history-card camera3-border">
+        <h4 class="camera3-color">
+          <span>Camera 3 History</span>
+          <span id="overview-camera3-history-count">0 records</span>
+        </h4>
+        <div class="peak-history-list" id="overview-camera3-peak-history">
+          <div class="no-history">No history recorded yet.</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="camera-status-grid">
+      <div class="camera-status-card camera1-border">
+        <h3 class="camera1-color">Camera 1</h3>
+        <div class="status-row">
+          <div class="status-label">Status:</div>
+          <div class="status-value">
+            <span class="camera-status-indicator" id="overview-camera1-indicator"></span>
+            <span id="overview-camera1-status">Disconnected</span>
+          </div>
+        </div>
+        <div class="status-row">
+          <div class="status-label">Objects:</div>
+          <div class="status-value" id="overview-camera1-count">0</div>
+        </div>
+        <div class="status-row">
+          <div class="status-label">Updated:</div>
+          <div class="status-value" id="overview-camera1-updated">Never</div>
+        </div>
+      </div>
+      
+      <div class="camera-status-card camera2-border">
+        <h3 class="camera2-color">Camera 2</h3>
+        <div class="status-row">
+          <div class="status-label">Status:</div>
+          <div class="status-value">
+            <span class="camera-status-indicator" id="overview-camera2-indicator"></span>
+            <span id="overview-camera2-status">Disconnected</span>
+          </div>
+        </div>
+        <div class="status-row">
+          <div class="status-label">Objects:</div>
+          <div class="status-value" id="overview-camera2-count">0</div>
+        </div>
+        <div class="status-row">
+          <div class="status-label">Updated:</div>
+          <div class="status-value" id="overview-camera2-updated">Never</div>
+        </div>
+      </div>
+      
+      <div class="camera-status-card camera3-border">
+        <h3 class="camera3-color">Camera 3</h3>
+        <div class="status-row">
+          <div class="status-label">Status:</div>
+          <div class="status-value">
+            <span class="camera-status-indicator" id="overview-camera3-indicator"></span>
+            <span id="overview-camera3-status">Disconnected</span>
+          </div>
+        </div>
+        <div class="status-row">
+          <div class="status-label">Objects:</div>
+          <div class="status-value" id="overview-camera3-count">0</div>
+        </div>
+        <div class="status-row">
+          <div class="status-label">Updated:</div>
+          <div class="status-value" id="overview-camera3-updated">Never</div>
+        </div>
+      </div>
+    </div>
+    
+    <h3>Camera Terminals</h3>
+    <div class="terminals-grid">
+      <div class="terminal-card camera1-border">
+        <h4 class="camera1-color">Camera 1 Terminal</h4>
+        <div class="terminal overview-terminal" id="overview-camera1-terminal"></div>
+      </div>
+      
+      <div class="terminal-card camera2-border">
+        <h4 class="camera2-color">Camera 2 Terminal</h4>
+        <div class="terminal overview-terminal" id="overview-camera2-terminal"></div>
+      </div>
+      
+      <div class="terminal-card camera3-border">
+        <h4 class="camera3-color">Camera 3 Terminal</h4>
+        <div class="terminal overview-terminal" id="overview-camera3-terminal"></div>
+      </div>
+    </div>
+    
+    <h3>Latest Detections From All Cameras</h3>
+    <div class="all-detections-grid">
+      <div class="detection-card camera1-border">
+        <h4 class="camera1-color">Camera 1 Detections</h4>
+        <div class="latest-detections" id="overview-camera1-detections">No detections yet</div>
+      </div>
+      
+      <div class="detection-card camera2-border">
+        <h4 class="camera2-color">Camera 2 Detections</h4>
+        <div class="latest-detections" id="overview-camera2-detections">No detections yet</div>
+      </div>
+      
+      <div class="detection-card camera3-border">
+        <h4 class="camera3-color">Camera 3 Detections</h4>
+        <div class="latest-detections" id="overview-camera3-detections">No detections yet</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // DOM elements - Server connection status
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    
+    // Camera tabs
+    const cameraTabs = document.querySelectorAll('.camera-tab');
+    const cameraSections = document.querySelectorAll('.camera-section');
+    
+    // Camera-specific elements
+    const cameraElements = {};
+    const cameraData = {
+      1: { 
+        connected: false, 
+        rtspUrl: '', 
+        detectionItems: [],
+        currentCount: 0,
+        peakCount: 0,
+        lastReset: null,
+        recording: false,
+        peakHistory: []
+      },
+      2: { 
+        connected: false, 
+        rtspUrl: '', 
+        detectionItems: [],
+        currentCount: 0,
+        peakCount: 0,
+        lastReset: null,
+        recording: false,
+        peakHistory: []
+      },
+      3: { 
+        connected: false, 
+        rtspUrl: '', 
+        detectionItems: [],
+        currentCount: 0,
+        peakCount: 0,
+        lastReset: null,
+        recording: false,
+        peakHistory: []
+      }
+    };
+    
+    // Peak detection elements
+    const peakElements = {};
+    
+    // Recording elements
+    const recordingElements = {};
+
+    // Global recording elements
+    const globalRecordingElements = {
+      startButton: document.getElementById('global-start-recording'),
+      stopButton: document.getElementById('global-stop-recording'),
+      clearButton: document.getElementById('global-clear-history'),
+      recordingIndicator: document.getElementById('global-recording-indicator'),
+      recordingStatus: document.getElementById('global-recording-status')
+    };
+
+    // Set up global recording controls
+    globalRecordingElements.startButton.addEventListener('click', startAllRecordings);
+    globalRecordingElements.stopButton.addEventListener('click', stopAllRecordings);
+    globalRecordingElements.clearButton.addEventListener('click', clearAllHistory);
+    
+    // Initialize camera elements
+    for (let i = 1; i <= 3; i++) {
+      cameraElements[i] = {
+        indicator: document.getElementById(`camera${i}-indicator`),
+        statusIndicator: document.getElementById(`camera${i}-status-indicator`),
+        statusText: document.getElementById(`camera${i}-status-text`),
+        terminal: document.getElementById(`camera${i}-terminal`),
+        commandForm: document.getElementById(`camera${i}-command-form`),
+        commandInput: document.getElementById(`camera${i}-command-input`),
+        sendButton: document.getElementById(`camera${i}-send-button`),
+        rtspUrlText: document.getElementById(`camera${i}-rtsp-url-text`),
+        objectCount: document.getElementById(`camera${i}-object-count`),
+        lastUpdated: document.getElementById(`camera${i}-last-updated`),
+        latestDetections: document.getElementById(`camera${i}-latest-detections`),
+        copyUrlBtn: document.getElementById(`camera${i}-copy-url-btn`),
+        externalPlayerLink: document.getElementById(`camera${i}-external-player-link`)
+      };
+      
+      // Initialize peak detection elements
+      peakElements[i] = {
+        peakCount: document.getElementById(`camera${i}-peak-count`),
+        currentCount: document.getElementById(`camera${i}-current-count`),
+        lastReset: document.getElementById(`camera${i}-last-reset`),
+        nextReset: document.getElementById(`camera${i}-next-reset`),
+        timerBar: document.getElementById(`camera${i}-timer-bar`),
+        overviewPeak: document.getElementById(`overview-camera${i}-peak`),
+        overviewNextReset: document.getElementById(`overview-camera${i}-next-reset`),
+        overviewTimerBar: document.getElementById(`overview-camera${i}-timer-bar`)
+      };
+      
+      // Initialize recording elements
+      recordingElements[i] = {
+        startButton: document.getElementById(`camera${i}-start-recording`),
+        stopButton: document.getElementById(`camera${i}-stop-recording`),
+        clearButton: document.getElementById(`camera${i}-clear-history`),
+        recordingIndicator: document.getElementById(`camera${i}-recording-indicator`),
+        recordingStatus: document.getElementById(`camera${i}-recording-status`),
+        historyList: document.getElementById(`camera${i}-peak-history`),
+        historyCount: document.getElementById(`camera${i}-history-count`),
+        overviewRecordingIndicator: document.getElementById(`overview-camera${i}-recording-indicator`),
+        overviewRecordingStatus: document.getElementById(`overview-camera${i}-recording-status`),
+        overviewHistoryList: document.getElementById(`overview-camera${i}-peak-history`),
+        overviewHistoryCount: document.getElementById(`overview-camera${i}-history-count`)
+      };
+      
+      // Add initial message to each terminal
+      const testLine = document.createElement('div');
+      testLine.textContent = `Camera ${i} terminal initialized. Waiting for data...`;
+      cameraElements[i].terminal.appendChild(testLine);
+      
+      // Set up command form for each camera
+      cameraElements[i].commandForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const command = cameraElements[i].commandInput.value.trim();
+        
+        if (command && isConnected) {
+          socket.emit('sendCommand', {
+            cameraId: i,
+            command: command
+          });
+          cameraElements[i].commandInput.value = '';
+        }
+      });
+      
+      // Set up copy URL button for each camera
+      cameraElements[i].copyUrlBtn.addEventListener('click', () => {
+        if (cameraData[i].rtspUrl) {
+          navigator.clipboard.writeText(cameraData[i].rtspUrl)
+            .then(() => {
+              const originalText = cameraElements[i].copyUrlBtn.textContent;
+              cameraElements[i].copyUrlBtn.textContent = 'Copied!';
+              setTimeout(() => {
+                cameraElements[i].copyUrlBtn.textContent = originalText;
+              }, 2000);
+            })
+            .catch(err => {
+              console.error('Failed to copy: ', err);
+              alert('Failed to copy URL: ' + err);
+            });
+        }
+      });
+      
+      // Set up recording controls for each camera
+      recordingElements[i].startButton.addEventListener('click', () => {
+        startRecording(i);
+      });
+      
+      recordingElements[i].stopButton.addEventListener('click', () => {
+        stopRecording(i);
+      });
+      
+      recordingElements[i].clearButton.addEventListener('click', () => {
+        clearHistory(i);
+      });
+    }
+    
+    // Start recording for a specific camera
+    function startRecording(cameraId) {
+      cameraData[cameraId].recording = true;
+      
+      // Update UI
+      recordingElements[cameraId].startButton.disabled = true;
+      recordingElements[cameraId].stopButton.disabled = false;
+      recordingElements[cameraId].recordingIndicator.classList.add('active');
+      recordingElements[cameraId].recordingStatus.textContent = 'Recording';
+      
+      // Update overview UI
+      recordingElements[cameraId].overviewRecordingIndicator.classList.add('active');
+      recordingElements[cameraId].overviewRecordingStatus.textContent = 'Recording';
+      
+      // Add message to terminal
+      const line = document.createElement('div');
+      line.textContent = `Peak detection recording started`;
+      cameraElements[cameraId].terminal.appendChild(line);
+      cameraElements[cameraId].terminal.scrollTop = cameraElements[cameraId].terminal.scrollHeight;
+      
+      // Also add to the overview terminal
+      addMessageToOverviewTerminal(cameraId, `Peak detection recording started`);
+      
+      // Check if all cameras are recording and update global controls
+      updateGlobalRecordingState();
+    }
+
+    // Stop recording for a specific camera
+    function stopRecording(cameraId) {
+      cameraData[cameraId].recording = false;
+      
+      // Update UI
+      recordingElements[cameraId].startButton.disabled = false;
+      recordingElements[cameraId].stopButton.disabled = true;
+      recordingElements[cameraId].recordingIndicator.classList.remove('active');
+      recordingElements[cameraId].recordingStatus.textContent = 'Not recording';
+      
+      // Update overview UI
+      recordingElements[cameraId].overviewRecordingIndicator.classList.remove('active');
+      recordingElements[cameraId].overviewRecordingStatus.textContent = 'Not recording';
+      
+      // Add message to terminal
+      const line = document.createElement('div');
+      line.textContent = `Peak detection recording stopped`;
+      cameraElements[cameraId].terminal.appendChild(line);
+      cameraElements[cameraId].terminal.scrollTop = cameraElements[cameraId].terminal.scrollHeight;
+      
+      // Also add to the overview terminal
+      addMessageToOverviewTerminal(cameraId, `Peak detection recording stopped`);
+      
+      // Check if all cameras are stopped and update global controls
+      updateGlobalRecordingState();
+    }
+
+    // Clear history for a specific camera
+    function clearHistory(cameraId) {
+      // Clear the history array
+      cameraData[cameraId].peakHistory = [];
+      
+      // Update UI
+      updateHistoryDisplay(cameraId);
+      
+      // Add message to terminal
+      const line = document.createElement('div');
+      line.textContent = `Peak detection history cleared`;
+      cameraElements[cameraId].terminal.appendChild(line);
+      cameraElements[cameraId].terminal.scrollTop = cameraElements[cameraId].terminal.scrollHeight;
+      
+      // Also add to the overview terminal
+      addMessageToOverviewTerminal(cameraId, `Peak detection history cleared`);
+    }
+
+    // Start recording for all cameras
+    function startAllRecordings() {
+      // Update UI
+      globalRecordingElements.startButton.disabled = true;
+      globalRecordingElements.stopButton.disabled = false;
+      globalRecordingElements.recordingIndicator.classList.add('active');
+      globalRecordingElements.recordingStatus.textContent = 'Recording all cameras';
+      
+      // Start recording for each camera
+      for (let i = 1; i <= 3; i++) {
+        startRecording(i);
+      }
+      
+      // Add message to all terminals
+      const message = 'Started recording peak detection for all cameras';
+      for (let i = 1; i <= 3; i++) {
+        const line = document.createElement('div');
+        line.textContent = message;
+        cameraElements[i].terminal.appendChild(line);
+        cameraElements[i].terminal.scrollTop = cameraElements[i].terminal.scrollHeight;
+        
+        // Also add to the overview terminal
+        addMessageToOverviewTerminal(i, message);
+      }
+    }
+
+    // Stop recording for all cameras
+    function stopAllRecordings() {
+      // Update UI
+      globalRecordingElements.startButton.disabled = false;
+      globalRecordingElements.stopButton.disabled = true;
+      globalRecordingElements.recordingIndicator.classList.remove('active');
+      globalRecordingElements.recordingStatus.textContent = 'Not recording';
+      
+      // Stop recording for each camera
+      for (let i = 1; i <= 3; i++) {
+        stopRecording(i);
+      }
+      
+      // Add message to all terminals
+      const message = 'Stopped recording peak detection for all cameras';
+      for (let i = 1; i <= 3; i++) {
+        const line = document.createElement('div');
+        line.textContent = message;
+        cameraElements[i].terminal.appendChild(line);
+        cameraElements[i].terminal.scrollTop = cameraElements[i].terminal.scrollHeight;
+        
+        // Also add to the overview terminal
+        addMessageToOverviewTerminal(i, message);
+      }
+    }
+
+    // Clear history for all cameras
+    function clearAllHistory() {
+      // Clear history for each camera
+      for (let i = 1; i <= 3; i++) {
+        clearHistory(i);
+      }
+      
+      // Add message to all terminals
+      const message = 'Cleared peak detection history for all cameras';
+      for (let i = 1; i <= 3; i++) {
+        const line = document.createElement('div');
+        line.textContent = message;
+        cameraElements[i].terminal.appendChild(line);
+        cameraElements[i].terminal.scrollTop = cameraElements[i].terminal.scrollHeight;
+        
+        // Also add to the overview terminal
+        addMessageToOverviewTerminal(i, message);
+      }
+    }
+
+    // Update global recording state based on individual camera states
+    function updateGlobalRecordingState() {
+      const allRecording = Object.values(cameraData).every(camera => camera.recording);
+      const anyRecording = Object.values(cameraData).some(camera => camera.recording);
+      
+      if (allRecording) {
+        // All cameras are recording
+        globalRecordingElements.startButton.disabled = true;
+        globalRecordingElements.stopButton.disabled = false;
+        globalRecordingElements.recordingIndicator.classList.add('active');
+        globalRecordingElements.recordingStatus.textContent = 'Recording all cameras';
+      } else if (anyRecording) {
+        // Some cameras are recording
+        globalRecordingElements.startButton.disabled = false;
+        globalRecordingElements.stopButton.disabled = false;
+        globalRecordingElements.recordingIndicator.classList.add('active');
+        globalRecordingElements.recordingStatus.textContent = 'Recording some cameras';
+      } else {
+        // No cameras are recording
+        globalRecordingElements.startButton.disabled = false;
+        globalRecordingElements.stopButton.disabled = true;
+        globalRecordingElements.recordingIndicator.classList.remove('active');
+        globalRecordingElements.recordingStatus.textContent = 'Not recording';
+      }
+    }
+    
+    // Add peak to history for a specific camera
+    function addPeakToHistory(cameraId, peakCount) {
+      if (!cameraData[cameraId].recording) return;
+      
+      // Create a new history entry
+      const entry = {
+        peakCount: peakCount,
+        timestamp: new Date(),
+        formattedTime: formatTime()
+      };
+      
+      // Add to history array
+      cameraData[cameraId].peakHistory.unshift(entry);
+      
+      // Update UI
+      updateHistoryDisplay(cameraId);
+      
+      // Add message to terminal
+      const line = document.createElement('div');
+      line.textContent = `Recorded peak: ${peakCount} vehicles at ${entry.formattedTime}`;
+      cameraElements[cameraId].terminal.appendChild(line);
+      cameraElements[cameraId].terminal.scrollTop = cameraElements[cameraId].terminal.scrollHeight;
+      
+      // Also add to the overview terminal
+      addMessageToOverviewTerminal(cameraId, `Recorded peak: ${peakCount} vehicles at ${entry.formattedTime}`);
+    }
+    
+    // Update history display for a specific camera
+    function updateHistoryDisplay(cameraId) {
+      const history = cameraData[cameraId].peakHistory;
+      const historyList = recordingElements[cameraId].historyList;
+      const overviewHistoryList = recordingElements[cameraId].overviewHistoryList;
+      
+      // Update history count
+      const countText = `${history.length} record${history.length !== 1 ? 's' : ''}`;
+      recordingElements[cameraId].historyCount.textContent = countText;
+      recordingElements[cameraId].overviewHistoryCount.textContent = countText;
+      
+      // Clear current display
+      historyList.innerHTML = '';
+      overviewHistoryList.innerHTML = '';
+      
+      if (history.length === 0) {
+        const noHistory = document.createElement('div');
+        noHistory.className = 'no-history';
+        noHistory.textContent = 'No history recorded yet. Click "Start Recording" to begin.';
+        historyList.appendChild(noHistory);
+        
+        const overviewNoHistory = document.createElement('div');
+        overviewNoHistory.className = 'no-history';
+        overviewNoHistory.textContent = 'No history recorded yet.';
+        overviewHistoryList.appendChild(overviewNoHistory);
+        return;
+      }
+      
+      // Add each history item to the display
+      history.forEach(entry => {
+        // Create item for camera view
+        const item = document.createElement('div');
+        item.className = 'peak-history-item';
+        
+        const countSpan = document.createElement('span');
+        countSpan.className = 'peak-history-count';
+        countSpan.textContent = `${entry.peakCount} vehicles`;
+        
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'peak-history-time';
+        timeSpan.textContent = entry.formattedTime;
+        
+        item.appendChild(countSpan);
+        item.appendChild(timeSpan);
+        historyList.appendChild(item);
+        
+        // Create item for overview
+        const overviewItem = item.cloneNode(true);
+        overviewHistoryList.appendChild(overviewItem);
+      });
+    }
+    
+    // Overview tab elements
+    const overviewTabIndicator = document.getElementById('overview-tab-indicator');
+    
+    // Initialize overview terminals
+    const overviewTerminals = {
+      1: document.getElementById('overview-camera1-terminal'),
+      2: document.getElementById('overview-camera2-terminal'),
+      3: document.getElementById('overview-camera3-terminal')
+    };
+    
+    // Add initial message to each overview terminal
+    for (let i = 1; i <= 3; i++) {
+      const testLine = document.createElement('div');
+      testLine.textContent = `Camera ${i} terminal initialized. Waiting for data...`;
+      overviewTerminals[i].appendChild(testLine);
+    }
+
+    // Initialize overview camera elements
+    const overviewElements = {};
+    for (let i = 1; i <= 3; i++) {
+      overviewElements[i] = {
+        indicator: document.getElementById(`overview-camera${i}-indicator`),
+        status: document.getElementById(`overview-camera${i}-status`),
+        count: document.getElementById(`overview-camera${i}-count`),
+        updated: document.getElementById(`overview-camera${i}-updated`),
+        detections: document.getElementById(`overview-camera${i}-detections`)
+      };
+    }
+    
+    // Tab switching functionality
+    cameraTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const cameraId = tab.getAttribute('data-camera');
+        
+        // Update active tab
+        cameraTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Update active section
+        cameraSections.forEach(section => section.classList.remove('active'));
+        
+        if (cameraId === 'overview') {
+          document.getElementById('overview-section').classList.add('active');
+        } else {
+          document.getElementById(`camera${cameraId}-section`).classList.add('active');
+        }
+      });
+    });
+    
+    // Connect to the server
+    const socket = io();
+    let isConnected = false;
+    
+    // Format current time
+    function formatTime() {
+      const now = new Date();
+      return now.toLocaleTimeString();
+    }
+    
+    // Update detection display for a specific camera
+    function updateDetectionsDisplay(cameraId) {
+      const detections = cameraElements[cameraId].latestDetections;
+      detections.innerHTML = '';
+      
+      if (cameraData[cameraId].detectionItems.length === 0) {
+        detections.textContent = 'No detections yet';
+        return;
+      }
+      
+      cameraData[cameraId].detectionItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'detection-item';
+        div.textContent = item;
+        detections.appendChild(div);
+      });
+    }
+    
+    // Update camera connection status
+    function updateCameraStatus(cameraId, connected) {
+      // Update the connection status in our data object
+      cameraData[cameraId].connected = connected;
+      
+      // Update the camera tab indicator
+      if (connected) {
+        cameraElements[cameraId].indicator.classList.add('connected');
+        cameraElements[cameraId].statusIndicator.classList.add('connected');
+        cameraElements[cameraId].statusText.textContent = 'Connected';
+        cameraElements[cameraId].sendButton.disabled = false;
+      } else {
+        cameraElements[cameraId].indicator.classList.remove('connected');
+        cameraElements[cameraId].statusIndicator.classList.remove('connected');
+        cameraElements[cameraId].statusText.textContent = 'Disconnected';
+        cameraElements[cameraId].sendButton.disabled = true;
+        
+        // Disable copy URL button when disconnected
+        cameraElements[cameraId].copyUrlBtn.disabled = true;
+        
+        // Hide external player link
+        cameraElements[cameraId].externalPlayerLink.style.display = 'none';
+      }
+      
+      // Update the overview status
+      updateOverviewStatus(cameraId, connected);
+      
+      // Update the overview tab indicator based on any camera being connected
+      updateOverviewTabIndicator();
+    }
+
+    // Update overview tab indicator based on any camera being connected
+    function updateOverviewTabIndicator() {
+      const anyConnected = Object.values(cameraData).some(camera => camera.connected);
+      
+      if (anyConnected) {
+        overviewTabIndicator.classList.add('connected');
+      } else {
+        overviewTabIndicator.classList.remove('connected');
+      }
+    }
+
+    // Update overview status when camera status changes
+    function updateOverviewStatus(cameraId, connected) {
+      if (connected) {
+        overviewElements[cameraId].indicator.classList.add('connected');
+        overviewElements[cameraId].status.textContent = 'Connected';
+      } else {
+        overviewElements[cameraId].indicator.classList.remove('connected');
+        overviewElements[cameraId].status.textContent = 'Disconnected';
+      }
+    }
+
+    // Handle server connection status
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      isConnected = true;
+      statusIndicator.classList.add('connected');
+      statusText.textContent = 'Connected to server';
+      
+      // Reset all camera statuses to disconnected first
+      for (let i = 1; i <= 3; i++) {
+        updateCameraStatus(i, false);
+      }
+      
+      // Request current status from server
+      setTimeout(() => {
+        checkCameraStatus();
+      }, 1000);
+      
+      // Start the peak detection timers
+      startPeakDetectionTimers();
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      isConnected = false;
+      statusIndicator.classList.remove('connected');
+      statusText.textContent = 'Disconnected from server';
+      
+      // Mark all cameras as disconnected
+      for (let i = 1; i <= 3; i++) {
+        updateCameraStatus(i, false);
+      }
+    });
+    
+    // Add message to the appropriate overview terminal
+    function addMessageToOverviewTerminal(cameraId, message) {
+      const terminal = overviewTerminals[cameraId];
+      if (terminal) {
+        const line = document.createElement('div');
+        line.textContent = message;
+        
+        // Style command lines differently
+        if (message.startsWith('>')) {
+          line.classList.add('command-line');
+        }
+        
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+      }
+    }
+
+    // Update overview detection display
+    function updateOverviewDetections(cameraId) {
+      const detections = overviewElements[cameraId].detections;
+      detections.innerHTML = '';
+      
+      if (cameraData[cameraId].detectionItems.length === 0) {
+        detections.textContent = 'No detections yet';
+        return;
+      }
+      
+      cameraData[cameraId].detectionItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'detection-item';
+        div.textContent = item;
+        detections.appendChild(div);
+      });
+    }
+
+    // Handle RTSP URL detected event
+    socket.on('rtspUrlDetected', (data) => {
+      const { cameraId, rtspUrl } = data;
+      
+      console.log(`RTSP URL detected for Camera ${cameraId}: ${rtspUrl}`);
+      
+      // Store the RTSP URL
+      cameraData[cameraId].rtspUrl = rtspUrl;
+      
+      // Update the URL text
+      cameraElements[cameraId].rtspUrlText.textContent = `RTSP URL: ${rtspUrl}`;
+      
+      // Enable copy URL button
+      cameraElements[cameraId].copyUrlBtn.disabled = false;
+      
+      // Update external player link
+      cameraElements[cameraId].externalPlayerLink.href = rtspUrl;
+      cameraElements[cameraId].externalPlayerLink.style.display = 'inline-block';
+      
+      // Add message to terminal
+      const line = document.createElement('div');
+      line.textContent = `RTSP URL detected: ${rtspUrl}`;
+      line.style.color = '#4caf50';
+      cameraElements[cameraId].terminal.appendChild(line);
+      cameraElements[cameraId].terminal.scrollTop = cameraElements[cameraId].terminal.scrollHeight;
+      
+      // Also add to the overview terminal
+      addMessageToOverviewTerminal(cameraId, `RTSP URL detected: ${rtspUrl}`);
+    });
+
+    // Peak detection timer variables
+    let peakTimers = {
+      1: { timer: null, secondsLeft: 60, width: 100 },
+      2: { timer: null, secondsLeft: 60, width: 100 },
+      3: { timer: null, secondsLeft: 60, width: 100 }
+    };
+    
+    // Start peak detection timers for all cameras
+    function startPeakDetectionTimers() {
+      for (let i = 1; i <= 3; i++) {
+        startPeakDetectionTimer(i);
+      }
+    }
+    
+    // Start peak detection timer for a specific camera
+    function startPeakDetectionTimer(cameraId) {
+      // Clear any existing timer
+      if (peakTimers[cameraId].timer) {
+        clearInterval(peakTimers[cameraId].timer);
+      }
+      
+      // Reset timer values
+      peakTimers[cameraId].secondsLeft = 60;
+      peakTimers[cameraId].width = 100;
+      
+      // Update timer displays
+      updateTimerDisplay(cameraId);
+      
+      // Start the timer
+      peakTimers[cameraId].timer = setInterval(() => {
+        peakTimers[cameraId].secondsLeft--;
+        peakTimers[cameraId].width = (peakTimers[cameraId].secondsLeft / 60) * 100;
+        
+        // Update timer displays
+        updateTimerDisplay(cameraId);
+        
+        // If timer reaches 0, reset the peak detection
+        if (peakTimers[cameraId].secondsLeft <= 0) {
+          resetPeakDetection(cameraId);
+        }
+      }, 1000);
+    }
+    
+    // Update timer display for a specific camera
+    function updateTimerDisplay(cameraId) {
+      const secondsLeft = peakTimers[cameraId].secondsLeft;
+      const width = peakTimers[cameraId].width;
+      
+      // Update next reset text
+      peakElements[cameraId].nextReset.textContent = `Next reset: ${secondsLeft}s`;
+      peakElements[cameraId].overviewNextReset.textContent = `${secondsLeft}s`;
+      
+      // Update timer bar width
+      peakElements[cameraId].timerBar.style.width = `${width}%`;
+      peakElements[cameraId].overviewTimerBar.style.width = `${width}%`;
+    }
+    
+    // Reset peak detection for a specific camera
+    function resetPeakDetection(cameraId) {
+      // Store the last peak count
+      const lastPeakCount = cameraData[cameraId].peakCount;
+      
+      // If recording is active, add the peak to history before resetting
+      if (cameraData[cameraId].recording) {
+        addPeakToHistory(cameraId, lastPeakCount);
+      }
+      
+      // Reset the current count and peak count
+      cameraData[cameraId].currentCount = 0;
+      cameraData[cameraId].peakCount = 0;
+      
+      // Update the last reset time
+      cameraData[cameraId].lastReset = new Date();
+      peakElements[cameraId].lastReset.textContent = formatTime();
+      
+      // Update the current count display
+      peakElements[cameraId].currentCount.textContent = '0';
+      
+      // Update the peak count display
+      peakElements[cameraId].peakCount.textContent = '0';
+      peakElements[cameraId].overviewPeak.textContent = '0';
+      
+      // Add message to terminal
+      const line = document.createElement('div');
+      line.textContent = `Peak detection reset. Previous peak: ${lastPeakCount} vehicles`;
+      cameraElements[cameraId].terminal.appendChild(line);
+      cameraElements[cameraId].terminal.scrollTop = cameraElements[cameraId].terminal.scrollHeight;
+      
+      // Also add to the overview terminal
+      addMessageToOverviewTerminal(cameraId, `Peak detection reset. Previous peak: ${lastPeakCount} vehicles`);
+      
+      // Restart the timer
+      startPeakDetectionTimer(cameraId);
+    }
+    
+    // Update peak detection count for a specific camera
+    function updatePeakDetection(cameraId, count) {
+      // Update the current count
+      cameraData[cameraId].currentCount = count;
+      peakElements[cameraId].currentCount.textContent = count;
+      
+      // Check if this is a new peak
+      if (count > cameraData[cameraId].peakCount) {
+        cameraData[cameraId].peakCount = count;
+        
+        // Update the peak count display with animation
+        peakElements[cameraId].peakCount.textContent = count;
+        peakElements[cameraId].peakCount.classList.add('updated');
+        setTimeout(() => {
+          peakElements[cameraId].peakCount.classList.remove('updated');
+        }, 1000);
+        
+        // Update the overview peak count display
+        peakElements[cameraId].overviewPeak.textContent = count;
+        peakElements[cameraId].overviewPeak.classList.add('updated');
+        setTimeout(() => {
+          peakElements[cameraId].overviewPeak.classList.remove('updated');
+        }, 1000);
+        
+        // Add message to terminal
+        const line = document.createElement('div');
+        line.textContent = `New peak detected: ${count} vehicles`;
+        cameraElements[cameraId].terminal.appendChild(line);
+        cameraElements[cameraId].terminal.scrollTop = cameraElements[cameraId].terminal.scrollHeight;
+        
+        // Also add to the overview terminal
+        addMessageToOverviewTerminal(cameraId, `New peak detected: ${count} vehicles`);
+      }
+    }
+
+    // Handle incoming data from the server
+    socket.on('serialData', (data) => {
+      console.log('Received data:', data);
+      
+      const { cameraId, message } = data;
+      
+      // Handle general messages (cameraId = 0)
+      if (cameraId === 0) {
+        // Add to all terminals
+        for (let i = 1; i <= 3; i++) {
+          const line = document.createElement('div');
+          line.textContent = message;
+          cameraElements[i].terminal.appendChild(line);
+          cameraElements[i].terminal.scrollTop = cameraElements[i].terminal.scrollHeight;
+          
+          // Also add to overview terminals
+          addMessageToOverviewTerminal(i, message);
+        }
+        return;
+      }
+      
+      // Handle explicit status messages
+      if (message.includes('status: Connected')) {
+        updateCameraStatus(cameraId, true);
+        
+        const line = document.createElement('div');
+        line.textContent = message;
+        line.style.color = '#4caf50'; // Green text for connection messages
+        
+        cameraElements[cameraId].terminal.appendChild(line);
+        cameraElements[cameraId].terminal.scrollTop = cameraElements[cameraId].terminal.scrollHeight;
+        
+        // Also add to the overview terminal
+        addMessageToOverviewTerminal(cameraId, message);
+        return;
+      }
+      
+      if (message.includes('status: Disconnected') || message.includes('disconnected') || message.includes('connection timed out')) {
+        updateCameraStatus(cameraId, false);
+        
+        const line = document.createElement('div');
+        line.textContent = message;
+        line.style.color = '#ff6b6b'; // Red text for disconnection messages
+        
+        cameraElements[cameraId].terminal.appendChild(line);
+        cameraElements[cameraId].terminal.scrollTop = cameraElements[cameraId].terminal.scrollHeight;
+        
+        // Also add to the overview terminal
+        addMessageToOverviewTerminal(cameraId, message);
+        return;
+      }
+      
+      // Add the data to the specific camera's terminal only
+      const line = document.createElement('div');
+      line.textContent = message;
+      
+      // Style command lines differently
+      if (message.startsWith('>')) {
+        line.classList.add('command-line');
+      }
+      
+      // Check if this is an RTSP URL
+      if (message.includes('RTSP Streaming') && message.includes('rtsp://')) {
+        const urlMatch = message.match(/rtsp:\/\/[0-9.]+:[0-9]+/);
+        if (urlMatch) {
+          cameraData[cameraId].rtspUrl = urlMatch[0];
+          cameraElements[cameraId].rtspUrlText.textContent = `RTSP URL: ${urlMatch[0]}`;
+          cameraElements[cameraId].copyUrlBtn.disabled = false;
+          
+          // Update external player link
+          cameraElements[cameraId].externalPlayerLink.href = urlMatch[0];
+          cameraElements[cameraId].externalPlayerLink.style.display = 'inline-block';
+        }
+      }
+      
+      // Check if this is object detection count
+      if (message.includes('Vehicles detected =')) {
+        const countMatch = message.match(/Vehicles detected = (\d+)/);
+        if (countMatch && countMatch[1]) {
+          const count = parseInt(countMatch[1]);
+          cameraElements[cameraId].objectCount.textContent = count;
+          cameraElements[cameraId].lastUpdated.textContent = formatTime();
+          
+          // Add animation effect
+          cameraElements[cameraId].objectCount.classList.add('updated');
+          setTimeout(() => {
+            cameraElements[cameraId].objectCount.classList.remove('updated');
+          }, 1000);
+          
+          // Update overview count
+          overviewElements[cameraId].count.textContent = count;
+          overviewElements[cameraId].updated.textContent = formatTime();
+          
+          // Update peak detection
+          updatePeakDetection(cameraId, count);
+        }
+      }
+      
+      // Check if this is an item detection
+      if (message.includes('Item') && message.includes('confidence')) {
+        // Add to latest detections
+        cameraData[cameraId].detectionItems.unshift(message);
+        // Keep only the 5 most recent detections
+        if (cameraData[cameraId].detectionItems.length > 5) {
+          cameraData[cameraId].detectionItems.pop();
+        }
+        
+        // Update the detections display
+        updateDetectionsDisplay(cameraId);
+        updateOverviewDetections(cameraId);
+      }
+      
+      // Add message to the specific camera's terminal
+      cameraElements[cameraId].terminal.appendChild(line);
+      cameraElements[cameraId].terminal.scrollTop = cameraElements[cameraId].terminal.scrollHeight;
+      
+      // Also add to the overview terminal for this camera
+      addMessageToOverviewTerminal(cameraId, message);
+    });
+
+    // Check camera status with server
+    function checkCameraStatus() {
+      if (isConnected) {
+        console.log("Checking camera status with server...");
+        socket.emit('checkCameraStatus');
+      }
+    }
+
+    // Increase the frequency of status checks
+    setInterval(checkCameraStatus, 5000); // Check every 5 seconds
+  </script>
+</body>
+</html>
+
